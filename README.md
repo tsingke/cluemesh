@@ -8,10 +8,17 @@ ClueMesh 是一款本地优先的公开身份线索分析工具。它可以拆�
 
 - [下载最新版本](https://github.com/tsingke/cluemesh/releases/latest)
 - [中文使用教程](docs/中文使用教程.md)
+- [代码架构与工作原理](docs/代码架构与工作原理.md)
 - [发行说明](docs/RELEASE_NOTES_1.0.0.md)
 - [许可说明](NOTICE.md)
 
 > 本工具只能生成候选线索，不能证明不同账号属于同一人。请仅用于合法、获授权的公开信息调查。
+
+## 界面预览
+
+<p align="center"><img src="docs/images/cluemesh-home.jpg" width="920" alt="ClueMesh macOS 主界面"></p>
+
+输入用户名或昵称、选择分析模块，然后点击 `Analyze`。站点范围、代理和 User-Agent 可在齿轮设置中调整。
 
 ## 功能
 
@@ -115,19 +122,20 @@ python3 app.py --help
 
 ## 工作机理
 
-```text
-macOS Electron window
-        │
-        ▼
-random 127.0.0.1 port
-        │
-        ▼
-Express API ──► string and name analysis
-        │
-        ├─────► HTTP fast scan
-        ├─────► Firefox slow/special scan
-        ├─────► metadata and pattern extraction
-        └─────► statistics and evidence graph
+```mermaid
+flowchart LR
+    User["macOS 用户"] --> Electron["Electron 主进程"]
+    Electron --> UI["沙箱 Renderer"]
+    Electron --> API["Express 本地 API<br/>随机 127.0.0.1 端口"]
+    UI --> API
+    API --> Local["字符串与姓名分析"]
+    API --> Fast["HTTP 快速扫描"]
+    API --> Slow["Firefox 慢速/特殊扫描"]
+    Fast --> Rules["检测规则引擎"]
+    Slow --> Rules
+    Rules --> Result["元数据、统计与证据图"]
+    Local --> Result
+    Result --> UI
 ```
 
 桌面进程在随机回环端口启动本地 API。Renderer 启用沙箱和上下文隔离，不开放 Node.js API；外部候选主页交由系统默认浏览器打开。运行日志保存在：
@@ -135,6 +143,8 @@ Express API ──► string and name analysis
 ```text
 ~/Library/Application Support/cluemesh/logs/
 ```
+
+请求时序、模块职责、规则评分和扫描决策流程详见[代码架构与工作原理](docs/代码架构与工作原理.md)。
 
 ## 开发命令
 
